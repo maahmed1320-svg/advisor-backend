@@ -424,9 +424,29 @@ const CHAINS = {
 ],
 }
 
+// ============================================================
+// 🔥 PREREQUISITE LOGIC (UPDATED WITH OR SUPPORT)
+// ============================================================
+
 function isSatisfied(code, completedSet, passingSet) {
   return completedSet.has(code) || passingSet.has(code)
 }
+
+// NEW: supports OR groups like "ENG200|FWS205"
+function isPrereqSatisfied(prereq, completedSet, passingSet) {
+  if (typeof prereq === 'string' && prereq.includes('|')) {
+    return prereq
+      .split('|')
+      .some(code => isSatisfied(code, completedSet, passingSet))
+  }
+
+  return isSatisfied(prereq, completedSet, passingSet)
+}
+
+
+// ============================================================
+// BUILD MAPS
+// ============================================================
 
 function buildPrereqMap(prerequisites) {
   const map = {}
@@ -446,33 +466,68 @@ function buildUnlockMap(prerequisites) {
   return map
 }
 
+
+// ============================================================
+// DOWNSTREAM SCORING
+// ============================================================
+
 function countDownstream(code, unlockMap, majorCourseSet, memo = {}) {
   if (memo[code] !== undefined) return memo[code]
+
   const direct = (unlockMap[code] || []).filter(c => majorCourseSet.has(c))
+
   let total = direct.length
-  for (const next of direct) total += countDownstream(next, unlockMap, majorCourseSet, memo)
+  for (const next of direct) {
+    total += countDownstream(next, unlockMap, majorCourseSet, memo)
+  }
+
   memo[code] = total
   return total
 }
 
-function computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet) {
+
+// ============================================================
+// BLOCKING LOGIC
+// ============================================================
+
+function computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet, passingSet) {
   const blocked = new Set(failingCodes)
   let changed = true
+
   while (changed) {
     changed = false
+
     for (const code of majorCourseSet) {
-      if (!blocked.has(code) && !completedSet.has(code)) {
-        if ((prereqMap[code] || []).some(p => blocked.has(p))) {
-          blocked.add(code); changed = true
+      if (blocked.has(code) || completedSet.has(code)) continue
+
+      const prereqs = prereqMap[code] || []
+
+      const hasBrokenPrereq = prereqs.some(p => {
+        // OR SUPPORT
+        if (p.includes('|')) {
+          return !p.split('|').some(c =>
+            completedSet.has(c) || passingSet.has(c)
+          )
         }
+
+        return blocked.has(p)
+      })
+
+      if (hasBrokenPrereq) {
+        blocked.add(code)
+        changed = true
       }
     }
   }
+
   for (const c of completedSet) blocked.delete(c)
   return blocked
 }
 
-// ── Main engine ───────────────────────────────────────────────
+
+// ============================================================
+// MAIN ENGINE
+// ============================================================
 
 export function runAdvisoryEngine({
   student,
@@ -483,43 +538,53 @@ export function runAdvisoryEngine({
   currentSemester = 'spring',
   sectionsMap = {},
 }) {
-  const majorCode      = student.major?.code ?? 'CSE'
-  const chains         = CHAINS[majorCode] || []
-  const majorCourseSet = new Set(chains.flat())
-  const prereqMap      = buildPrereqMap(prerequisites)
-  const unlockMap      = buildUnlockMap(prerequisites)
-  const unlockMemo     = {}
-  const courseMap      = Object.fromEntries(allCourses.map(c => [c.code, c]))
+  const majorCode = student.major?.code ?? 'CSE'
 
-  // ── Classify enrollments ──────────────────────────────────
-  const completedSet   = new Set()
+  const chains = CHAINS[majorCode] || []
+  const majorCourseSet = new Set(chains.flat())
+
+  const prereqMap = buildPrereqMap(prerequisites)
+  const unlockMap = buildUnlockMap(prerequisites)
+  const unlockMemo = {}
+
+  const courseMap = Object.fromEntries(allCourses.map(c => [c.code, c]))
+
+  // ─────────────────────────────────────────────
+  // CLASSIFY ENROLLMENTS
+  // ─────────────────────────────────────────────
+
+  const completedSet = new Set()
   const inProgressList = []
-  const passingSet     = new Set()
-  const failingCodes   = new Set()
+  const passingSet = new Set()
+  const failingCodes = new Set()
 
   for (const e of enrollments) {
     if (e.status === 'completed') {
       completedSet.add(e.course_code)
+
     } else if (e.status === 'in_progress') {
+
       const prediction = predictPass(e.grade, e.attendance)
-      const passFail   = manualOverrides[e.course_code] !== undefined
-        ? manualOverrides[e.course_code]
-        : prediction.predicted
+
+      const passFail =
+        manualOverrides[e.course_code] !== undefined
+          ? manualOverrides[e.course_code]
+          : prediction.predicted
 
       if (passFail) passingSet.add(e.course_code)
-      else          failingCodes.add(e.course_code)
+      else failingCodes.add(e.course_code)
 
       inProgressList.push({
-        code:           e.course_code,
-        name:           e.course?.name ?? e.course_code,
-        credits:        e.course?.credits ?? 3,
-        semesterOffered:e.course?.semester_offered ?? 'spring',
-        instructor:     e.course?.instructor ?? null,
-        days:           e.course?.days ?? null,
-        timeSlot:       e.course?.time_slot ?? null,
-        room:           e.course?.room ?? null,
-        grade:          e.grade,
-        attendance:     e.attendance,
+        code: e.course_code,
+        name: e.course?.name ?? e.course_code,
+        credits: e.course?.credits ?? 3,
+        semesterOffered: e.course?.semester_offered ?? 'spring',
+        instructor: e.course?.instructor ?? null,
+        days: e.course?.days ?? null,
+        timeSlot: e.course?.time_slot ?? null,
+        room: e.course?.room ?? null,
+        grade: e.grade,
+        attendance: e.attendance,
         prediction,
         passFail,
         manualOverride: manualOverrides[e.course_code] !== undefined,
@@ -528,107 +593,146 @@ export function runAdvisoryEngine({
   }
 
   const inProgressCodes = new Set(inProgressList.map(c => c.code))
-  const blockedSet      = computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet)
+
+  const blockedSet = computeBlocked(
+    failingCodes,
+    prereqMap,
+    completedSet,
+    majorCourseSet,
+    passingSet
+  )
+
   for (const c of inProgressCodes) blockedSet.delete(c)
 
-  // ── Recommendations ───────────────────────────────────────
-  // Take all courses in CHAINS for this major, then remove:
-  //   - already completed
-  //   - currently in progress
-  //   - not offered this semester (wrong semester)
-  // Sort: non-blocked first, then by how many courses they unlock
+
+  // ─────────────────────────────────────────────
+  // RECOMMENDATIONS
+  // ─────────────────────────────────────────────
 
   const recommendations = [...majorCourseSet]
     .map(code => {
       const course = courseMap[code]
       if (!course) return null
 
-      // SEMESTER FILTER — only show if offered this semester
       const offeredThisSemester =
         course.semester_offered === currentSemester ||
         course.semester_offered === 'both'
 
       if (!offeredThisSemester) return null
-      if (completedSet.has(code))   return null
+      if (completedSet.has(code)) return null
       if (inProgressCodes.has(code)) return null
 
-      const prereqs        = prereqMap[code] || []
-      const prereqsMet     = prereqs.every(p => isSatisfied(p, completedSet, passingSet))
-      const isBlocked      = blockedSet.has(code)
-      const downstream     = countDownstream(code, unlockMap, majorCourseSet, unlockMemo)
+      const prereqs = prereqMap[code] || []
+
+      // 🔥 OR-AWARE PREREQ CHECK
+      const prereqsMet = prereqs.every(p =>
+        isPrereqSatisfied(p, completedSet, passingSet)
+      )
+
+      const isBlocked = blockedSet.has(code)
+
+      const downstream = countDownstream(
+        code,
+        unlockMap,
+        majorCourseSet,
+        unlockMemo
+      )
+
       const courseSections = sectionsMap[code] || []
 
       return {
         code,
-        name:            course.name,
-        credits:         course.credits,
-        type:            course.type,
+        name: course.name,
+        credits: course.credits,
+        type: course.type,
         semesterOffered: course.semester_offered,
-        oncePerYear:     course.once_per_year,
-        sections:        courseSections,
-        instructor:      courseSections[0]?.instructor ?? course.instructor ?? null,
-        days:            courseSections[0]?.days       ?? course.days ?? null,
-        timeSlot:        courseSections[0]?.time_slot  ?? course.time_slot ?? null,
-        room:            courseSections[0]?.room       ?? course.room ?? null,
+        oncePerYear: course.once_per_year,
+        sections: courseSections,
+        instructor: courseSections[0]?.instructor ?? course.instructor ?? null,
+        days: courseSections[0]?.days ?? course.days ?? null,
+        timeSlot: courseSections[0]?.time_slot ?? course.time_slot ?? null,
+        room: courseSections[0]?.room ?? course.room ?? null,
         prereqsMet,
         isBlocked,
         downstreamUnlocks: downstream,
-        missingPrereqs: prereqs.filter(p => !isSatisfied(p, completedSet, passingSet)),
+        missingPrereqs: prereqs.filter(p =>
+          !isPrereqSatisfied(p, completedSet, passingSet)
+        ),
       }
     })
     .filter(Boolean)
     .sort((a, b) => {
-      // Blocked always last
       if (a.isBlocked !== b.isBlocked) return a.isBlocked ? 1 : -1
-      // Locked (prereqs not met) before blocked but after available
       if (a.prereqsMet !== b.prereqsMet) return a.prereqsMet ? -1 : 1
-      // Among available: more downstream unlocks = higher priority
       return b.downstreamUnlocks - a.downstreamUnlocks
     })
 
-  // ── Chain display states ──────────────────────────────────
+
+  // ─────────────────────────────────────────────
+  // CHAIN DISPLAY
+  // ─────────────────────────────────────────────
+
   const chainDisplay = chains.map(chain =>
     chain.map(code => {
       let state = 'locked'
+
       if (completedSet.has(code)) {
         state = 'completed'
+
       } else if (inProgressCodes.has(code)) {
         const ip = inProgressList.find(x => x.code === code)
         state = ip?.passFail ? 'in_progress' : 'in_progress_at_risk'
-      } else if ((prereqMap[code] || []).every(p => isSatisfied(p, completedSet, passingSet))) {
-        state = 'available'
+
+      } else {
+        const prereqs = prereqMap[code] || []
+
+        const available = prereqs.every(p =>
+          isPrereqSatisfied(p, completedSet, passingSet)
+        )
+
+        if (available) state = 'available'
       }
+
       return { code, state }
     })
   )
 
-  // ── Completed list ────────────────────────────────────────
+
+  // ─────────────────────────────────────────────
+  // COMPLETED LIST
+  // ─────────────────────────────────────────────
+
   const completed = enrollments
     .filter(e => e.status === 'completed')
     .map(e => ({
-      code:    e.course_code,
-      name:    e.course?.name ?? e.course_code,
+      code: e.course_code,
+      name: e.course?.name ?? e.course_code,
       credits: e.course?.credits ?? 3,
-      term:    e.term,
+      term: e.term,
     }))
     .reverse()
 
+
+  // ─────────────────────────────────────────────
+  // OUTPUT
+  // ─────────────────────────────────────────────
+
   return {
     student: {
-      id:              student.id,
-      name:            student.name,
-      semester:        student.semester,
-      gpa:             student.gpa,
-      gpaTrend:        student.gpa_trend,
-      earnedCredits:   student.earned_credits,
+      id: student.id,
+      name: student.name,
+      semester: student.semester,
+      gpa: student.gpa,
+      gpaTrend: student.gpa_trend,
+      earnedCredits: student.earned_credits,
       requiredCredits: student.major?.required_credits ?? 130,
-      major:           student.major?.name ?? '',
+      major: student.major?.name ?? '',
       majorCode,
     },
-    inProgress:   inProgressList,
+    inProgress: inProgressList,
     completed,
     recommendations,
-    chains:       chainDisplay,
+    chains: chainDisplay,
     blockedCodes: [...blockedSet],
   }
 }
