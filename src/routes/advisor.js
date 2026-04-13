@@ -5,9 +5,12 @@ import { runAdvisoryEngine } from '../engine.js'
 export const router = Router()
 
 router.get('/student/:id', async (req, res) => {
+
   const { id } = req.params
+
   const currentSemester = req.query.semester ?? 'spring'
 
+  //pass or fail button
   const manualOverrides = {}
   if (req.query.overrides) {
     for (const part of req.query.overrides.split(',')) {

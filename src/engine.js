@@ -11,173 +11,417 @@
 
 const CHAINS = {
 
-  // ── CEN chains ───────────────────────────────────────────
   CEN: [
-    ['ARL101A','ISL100'],
-    ['ECS100','COE101'],
-    ['ECS100','EEN210','EEN210L','CEN201','CEN304','CEN324'],
-    ['ECS100','EEN210','CEN325','CEN368','CEN451','CEN452'],
-    ['ECS100','EEN210','CEN325','CEN425','CEN401L'],
-    ['ECS100','EEN210','CEN466'],
-    ['MTT102','STT100','MTT202'],
-    ['MTT102','MTT200','MTT204','MTT205','CEN320','CEN330'],
-    ['MTT102','MTT200','MTT204','MTT205','CEN320','EEN365'],
-    ['MTT102','MTT200','MTT204','MTT205','CEN320','CEN464','CEN464L','CEN454'],
-    ['MTT102','MTT200','MTT204','MTT205','CSC201','GEN300'],
-    ['MTT102','PHY102','PHY102L','PHY201','PHY201L'],
-    ['ENG200','FWS205'],
-    ['ENG200','COE202'],
-    ['ENG200','FWS310'],
-    ['CSC201','CSC202','CSC301','CSC305','CSC308','CEN455'],
-    ['MTT202','CSC301'],
-    ['CSC305','ITE408'],
-    ['CSC201','CSC202','CSC202L'],
-    ['CSC201','CEN333'],
-    ['CSC201','CEN325','CEN368','CEN399i','CEN399ii'],
-    ['COE101','AIRE310','AIRE410'],
-    ['CEN325','AIRE310','AIRE325'],
-    ['AIRE310','AIRE430'],
-    ['AIRE310','AIRE475'],
-    ['MTT202','CSC201','CSC302'],
-    ['CSC201','CSC307'],
-    ['CSC202','SWE401'],
-    ['CSC305','ITE402'],
-    ['CEN425','CEN435'],
-    ['CEN425','CEN445'],
-    ['CEN201','EEN220'],
-    ['CEN320','EEN337'],
-  ],
 
-  // ── CSE chains — exact from official study plan ───────────
-  // Every edge below comes directly from the prerequisite table.
-  // Multi-parent nodes: CSC301(CSC202+MTT202), CSC302(MTT202+SWE201),
-  //   PHY102L(MTT102+PHY102), PHY201L(PHY102+PHY201),
-  //   CEN325_CSE(SWE201+CSC303), CEN425_CSE(CEN325_CSE+ITE421+CSC305),
-  //   CSE310(STT201+MTT202), CSC406(STT201+CSC301),
-  //   CSE499A(CSC406+ITE408), CSC408(CSC202+CSC305)
-  CSE: [
-    // ── Sem 1 roots ──────────────────────────────────────────
-    ['ARL101A','ISL100'],
-    ['ENG200','FWS205'],
-    ['ENG200','FWS305'],
-    ['ENG200','FWS310'],
-    ['ECT200','CSE210'],
-    ['ECT200','CSC303'],            // CSC303 needs ECT200
+  // ─────────────────────────────
+  // 🎓 YEAR 1 — SEM 1
+  // ─────────────────────────────
+  ['ARL101A'],
+  ['ISL100'],
+  ['ECS100'],
+  ['MTT102'],
+  ['STT100'],
 
-    // ── MTT102 subtree ───────────────────────────────────────
-    ['MTT102','PHY102','PHY201'],   // PHY102→PHY201
-    ['MTT102','PHY102L'],           // PHY102L needs MTT102 (+ PHY102 co-req)
-    ['PHY102','PHY102L'],           // second parent of PHY102L
-    ['PHY102','PHY201L'],           // PHY201L needs PHY102 (+ PHY201 co-req)
-    ['PHY201','PHY201L'],           // second parent of PHY201L
-    ['MTT102','MTT200','MTT204'],
-    ['MTT102','STT100','COE102'],
-    ['STT100','MTT202'],
-    ['STT100','STT201'],
+  // ─────────────────────────────
+  // 🎓 YEAR 1 — SEM 2
+  // ─────────────────────────────
+  ['ENG200'],
+  ['ENG200','FWS205'],
 
-    // ── SWE201 subtree ───────────────────────────────────────
-    ['SWE201','CSC202'],
-    ['SWE201','CSC302'],            // CSC302 needs SWE201 (+ MTT202)
-    ['MTT202','CSC302'],            // second parent of CSC302
-    ['SWE201','CSC307','ITE410'],
-    ['SWE201','CSE300'],
-    ['SWE201','CEN325_CSE'],        // CEN325_CSE needs SWE201 (+ CSC303)
-    ['CSC303','CEN325_CSE'],        // second parent of CEN325_CSE
+  ['STT100','COE101'],
 
-    // ── CSC202 branches ──────────────────────────────────────
-    ['CSC202','CSC301'],            // CSC301 needs CSC202 (+ MTT202)
-    ['MTT202','CSC301'],            // second parent of CSC301
-    ['CSC202','SWE401','ITE401'],
-    ['SWE401','ITE409'],
-    ['CSC202','ITE421'],
-    ['CSC202','ITE390'],
-    ['CSC202','SWE370'],
-    ['CSC202','SWE371'],
+  ['MTT102','PHY102'],
+  ['MTT102','PHY102L'],
+  ['PHY102','PHY102L'],
 
-    // ── CSC301 branches ──────────────────────────────────────
-    ['CSC301','CSC305'],            // CSC305 needs CSC301
-    ['CSC301','CSC308'],
-    ['CSC301','CSC406'],            // CSC406 needs CSC301 (+ STT201)
-    ['STT201','CSC406'],            // second parent of CSC406
+  ['MTT102','MTT200'],
 
-    // ── CSC305 branches ──────────────────────────────────────
-    ['CSC305','ITE408','CSE499A'],  // ITE408→CSE499A
-    ['CSC406','CSE499A'],           // second parent of CSE499A
-    ['CSE499A','CSE499B'],
-    ['CSC305','CSE400'],
-    ['CSC305','CSE410'],
-    ['CSC305','CSE420'],
-    ['CSC305','ITE402_CSE'],
-    ['CSC305','ITE422'],
-    ['CSC305','CSC408'],            // CSC408 needs CSC305 (+ CSC202)
-    ['CSC202','CSC408'],            // second parent of CSC408
+  // ─────────────────────────────
+  // 🎓 YEAR 2 — SEM 3
+  // ─────────────────────────────
+  ['MTT102','CSC201'],
 
-    // ── CEN325_CSE branches ──────────────────────────────────
-    ['CEN325_CSE','CEN425_CSE'],    // CEN425_CSE needs CEN325_CSE+ITE421+CSC305
-    ['ITE421','CEN425_CSE'],        // second parent
-    ['CSC305','CEN425_CSE'],        // third parent
+  ['PHY102','PHY201'],
+  ['PHY102','PHY201L'],
+  ['PHY201','PHY201L'],
 
-    // ── STT201 branches ──────────────────────────────────────
-    ['STT201','CSE310'],            // CSE310 needs STT201 (+ MTT202)
-    ['MTT202','CSE310'],            // second parent of CSE310
-    ['STT201','ITE442'],
+  ['ECS100','EEN210'],
+  ['EEN210','EEN210L'], // co-req
 
-    // ── Internships ──────────────────────────────────────────
-    ['CSC301','CSE399A'],           // CSE399A after 60cr (approx after CSC301)
-    ['CSE399A','CSE399B'],
+  ['ENG200','COE202'],
+  ['MTT102','COE202'],
 
-    // ── CHE ──────────────────────────────────────────────────
-    ['CHE205','CHE201L'],
+  ['STT100','MTT202'],
 
-    // ── CSC302 elective ──────────────────────────────────────
-    ['CSC302','CIS404'],
+  // ─────────────────────────────
+  // 🎓 YEAR 2 — SEM 4
+  // ─────────────────────────────
+  ['CSC201','CSC202'],
+  ['CSC201','CEN333'],
 
-    // ── Standalone ───────────────────────────────────────────
-    ['ITE414'],
-  ],
+  ['ECS100','CEN201'],
+  ['PHY201','CEN201'],
+  ['EEN210L','CEN201'],
 
-  // ── SWE chains — official study plan ─────────────────────
-  SWE: [
-    ['SWE201','CSC202','SWE401_SWE','SWE471','SWE472'],
-    ['SWE201','CSC202','SWE401_SWE','SWE471','SWE499A','SWE499B'],
-    ['SWE401_SWE','SWE473'],
-    ['SWE201','CSC202','SWE370_SWE'],
-    ['SWE201','CSC202','SWE371_SWE'],
-    ['SWE201','CSC202','ITE421_SWE','SWE499A'],
-    ['SWE201','CSC202','ITE390_SWE'],
-    ['SWE201','CSC202','CSC301','CSC308'],
-    ['MTT202','CSC301'],
-    ['CSC301','CSC305','ITE408_SWE'],
-    ['CSC305','ITE422_SWE'],
-    ['CSC305','CSC408_SWE'],
-    ['CSC202','CSC305'],
-    ['CSC301','SWE399A','SWE399B'],
-    ['SWE201','CSC302_SWE'],
-    ['MTT202','CSC302_SWE'],
-    ['SWE201','CSC307_SWE'],
-    ['STT201','CSC301'],
-    ['STT201','CSC406_SWE'],
-    ['CSC301','CSC406_SWE'],
-    ['MTT202','CSE310_SWE'],
-    ['STT201','CSE310_SWE'],
-    ['SWE401_SWE','ITE409_SWE'],
-    ['ARL101A','ISL100'],
-    ['ENG200','FWS205'],
-    ['ENG200','MTT102','COE202_SWE'],
-    ['ENG200','FWS305','FWS310'],
-    ['MTT102','STT100','STT201'],
-    ['STT100','COE102'],
-    ['STT100','MTT202'],
-    ['MTT102','MTT200','MTT204'],
-    ['MTT102','PHY102','PHY102L','PHY201','PHY201L'],
-    ['CHE205','CHE201L'],
-  ],
-}
+  ['MTT200','MTT204'],
+  ['MTT200','MTT205'],
+  ['MTT204','MTT205'], // co-req
 
+  ['CSC201','AIRE310'],
+  ['COE101','AIRE310'],
+  ['MTT200','AIRE310'],
 
-export function predictPass(grade, attendance) {
-  const score = (grade ?? 0) * 0.7 + (attendance ?? 0) * 0.3
-  return { score: Math.round(score), predicted: score >= 60 }
+  // ─────────────────────────────
+  // 🎓 YEAR 3 — SEM 5
+  // ─────────────────────────────
+  ['MTT205','CEN320'],
+  ['CEN201','CEN320'],
+
+  ['CSC202','CSC301'],
+  ['MTT202','CSC301'],
+
+  ['JUNIOR_LEVEL','CSC305'],
+
+  ['CEN201','CEN304'],
+
+  ['CSC201','CEN325'],
+  ['EEN210','CEN325'],
+
+  ['EEN210','CEN368'],
+  ['CEN325','CEN368'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 3 — SEM 6
+  // ─────────────────────────────
+  ['CEN320','CEN330'],
+  ['STT100','CEN330'],
+
+  ['CSC301','CSC308'],
+
+  ['CEN304','CEN324'],
+
+  ['CEN325','CEN425'],
+
+  ['CEN425','CEN401L'], // co-req
+  ['EEN210L','CEN401L'],
+
+  ['CSC201','CSC202L'],
+  ['CSC202','CSC202L'],
+
+  ['AIRE310','AIRE410'],
+
+  // ─────────────────────────────
+  // ☀️ INTERNSHIP
+  // ─────────────────────────────
+  ['CREDITS_90','CEN399i'],
+  ['CEN399i','CEN399ii'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 4 — SEM 7
+  // ─────────────────────────────
+  ['MTT205','GEN300'],
+  ['CSC201','GEN300'],
+
+  ['ENG200','FWS310'],
+  ['CREDITS_60','FWS310'],
+
+  ['AIRE310','AIRE475'],
+  ['CEN325','AIRE475'],
+
+  ['CSC308','CEN455'],
+  ['CSC305','CEN455'],
+  ['CEN325','CEN455'],
+
+  ['CEN320','CEN464'],
+  ['CEN464','CEN464L'], // co-req
+
+  ['SENIOR_LEVEL','CEN451'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 4 — SEM 8
+  // ─────────────────────────────
+  ['CEN320','EEN365'],
+  ['MTT204','EEN365'],
+
+  ['CEN325','AIRE325'],
+  ['AIRE310','AIRE325'],
+
+  ['EEN210','CEN466'],
+
+  ['CEN451','CEN452'],
+
+  ['CEN464','CEN454'],
+  ['CEN464L','CEN454'],
+
+  ['AIRE310','AIRE430'],
+
+],
+
+ CSE: [
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 1 — SEMESTER 1 (ROOTS)
+  // ─────────────────────────────────────────
+  ['ARL101A'],
+  ['ISL100'],
+  ['ENG200'],
+  ['ECT200'],
+  ['MTT102'],                 // enables SWE201
+  ['STT100'],
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 1 — SEMESTER 2
+  // ─────────────────────────────────────────
+  ['ECT200','CSE210'],
+
+  ['ENG200','FWS205'],        // (+ FWS100 co-req not modeled)
+
+  ['MTT102','PHY102'],
+  ['MTT102','PHY102L'],       // + PHY102 co-req
+  ['PHY102','PHY102L'],
+
+  ['MTT102','MTT200'],
+  ['STT100','COE102'],
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 2 — SEMESTER 3
+  // ─────────────────────────────────────────
+  ['MTT102','SWE201'],        // ✅ FIXED (was wrong before)
+
+  ['STT100','MTT202'],
+  ['STT100','STT201'],
+
+  ['PHY102','PHY201'],
+  ['PHY102','PHY201L'],       // + PHY201 co-req
+  ['PHY201','PHY201L'],
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 2 — SEMESTER 4
+  // ─────────────────────────────────────────
+  ['SWE201','CSC202'],
+
+  ['MTT202','CSC302'],
+  ['SWE201','CSC302'],
+
+  ['ENG200','FWS305'],
+  ['CREDITS_45','FWS305'],    // ✅ FIXED
+
+  ['MTT200','MTT204'],
+
+  ['CHE205','CHE201L'],       // co-req relation simplified
+
+  // ─────────────────────────────────────────
+  // ☀️ SUMMER — INTERNSHIP A
+  // ─────────────────────────────────────────
+  ['CREDITS_60','CSE399A'],   // ✅ FIXED (not CSC301)
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 3 — SEMESTER 5
+  // ─────────────────────────────────────────
+  ['CSC202','CSC301'],
+  ['MTT202','CSC301'],
+
+  ['ECT200','CSC303'],
+
+  ['STT201','CSE310'],
+  ['MTT202','CSE310'],
+
+  ['CSC202','SWE401'],
+
+  // CSC305 → no course prereq (junior level)
+  ['JUNIOR_LEVEL','CSC305'],  // ✅ FIXED
+
+  ['CSC305','ITE408'],        // co-req
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 3 — SEMESTER 6
+  // ─────────────────────────────────────────
+  ['CSC301','CSC308'],
+
+  ['SWE201','CSE300'],
+
+  ['SWE201','CSC307'],
+  ['CSC307','ITE410'],
+
+  ['SWE201','CEN325_CSE'],
+  ['CSC303','CEN325_CSE'],
+
+  ['CSC301','CSC406'],
+  ['STT201','CSC406'],
+
+  ['CSC202','ITE390'],
+
+  ['CSC202','ITE421'],
+
+  // Internship continuation
+  ['CSE399A','CSE399B'],
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 4 — SEMESTER 7
+  // ─────────────────────────────────────────
+  ['CSC305','CSE400'],
+  ['CSC305','CSE410'],
+
+  ['CEN325_CSE','CEN425_CSE'],
+  ['ITE421','CEN425_CSE'],    // OR condition simplified
+  ['CSC305','CEN425_CSE'],
+
+  ['CSC406','CSE499A'],
+  ['ITE408','CSE499A'],
+
+  ['CSC202','CSC408'],
+  ['CSC305','CSC408'],
+
+  ['CSC302','CIS404'],
+
+  // ─────────────────────────────────────────
+  // 🎓 YEAR 4 — SEMESTER 8
+  // ─────────────────────────────────────────
+  ['CSC305','CSE420'],
+
+  ['CSE499A','CSE499B'],
+
+  ['ENG200','FWS310'],
+  ['CREDITS_60','FWS310'],    // ✅ FIXED
+
+  // ─────────────────────────────────────────
+  // 📦 STANDALONE / NO PREREQ COURSES
+  // ─────────────────────────────────────────
+  ['ITE414'],
+
+],
+ SWE: [
+
+  // ─────────────────────────────
+  // 🎓 YEAR 1 — SEM 1
+  // ─────────────────────────────
+  ['ENG200'],
+  ['ARL101A'],
+  ['MTT102'],
+  ['STT100'],
+  ['ISL100'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 1 — SEM 2
+  // ─────────────────────────────
+  ['MTT102','PHY102'],
+  ['MTT102','PHY102L'],
+  ['PHY102','PHY102L'],
+
+  ['ENG200','CHE205'],
+  ['CHE205','CHE201L'],
+
+  ['MTT102','MTT200'],
+  ['STT100','COE102'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 2 — SEM 3
+  // ─────────────────────────────
+  ['MTT102','SWE201'],   // ✅ fixed
+
+  ['ENG200','FWS205'],
+
+  ['PHY102','PHY201'],
+  ['PHY102','PHY201L'],
+  ['PHY201','PHY201L'],
+
+  ['STT100','MTT202'],
+  ['STT100','STT201'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 2 — SEM 4
+  // ─────────────────────────────
+  ['SWE201','CSC202'],
+
+  ['SWE201','CSC307_SWE'],
+
+  ['MTT202','CSC302_SWE'],
+  ['SWE201','CSC302_SWE'],
+
+  ['ENG200','FWS305'],
+  ['CREDITS_45','FWS305'],
+
+  ['MTT200','MTT204'],
+
+  ['ENG200','COE202_SWE'],
+  ['MTT102','COE202_SWE'],
+
+  // ─────────────────────────────
+  // ☀️ INTERNSHIP A
+  // ─────────────────────────────
+  ['CREDITS_60','SWE399A'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 3 — SEM 5
+  // ─────────────────────────────
+  ['CSC202','CSC301'],
+  ['MTT202','CSC301'],
+
+  ['JUNIOR_LEVEL','CSC305'],
+
+  ['CSC202','ITE390_SWE'],
+  ['CSC202','SWE371_SWE'],
+  ['CSC202','SWE401_SWE'],
+  ['CSC202','SWE370_SWE'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 3 — SEM 6
+  // ─────────────────────────────
+  ['CSC301','CSC308'],
+
+  ['STT201','CSC406_SWE'],
+  ['CSC301','CSC406_SWE'],
+
+  ['CSC307_SWE','ITE410'],
+
+  ['CSC202','ITE421_SWE'],
+
+  ['MTT202','SWE302'],
+  ['SWE401_SWE','SWE302'],
+
+  ['SWE401_SWE','SWE471'],
+
+  // ─────────────────────────────
+  // ☀️ INTERNSHIP B
+  // ─────────────────────────────
+  ['SWE399A','SWE399B'],
+  ['CREDITS_90','SWE399B'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 4 — SEM 7
+  // ─────────────────────────────
+  ['CSC305','ITE408_SWE'],
+
+  ['SWE401_SWE','ITE409_SWE'], // OR with CSC401
+
+  ['SWE471','SWE472'],
+
+  ['CSC305','CSE410_SWE'],
+
+  ['JUNIOR_LEVEL','ITE414'],
+
+  ['SWE471','SWE499A'],
+  ['ITE421_SWE','SWE499A'],
+  ['CREDITS_90','SWE499A'],
+
+  // ─────────────────────────────
+  // 🎓 YEAR 4 — SEM 8
+  // ─────────────────────────────
+  ['CSC202','CSC408_SWE'],
+  ['CSC305','CSC408_SWE'],
+
+  ['SWE401_SWE','SWE473'],
+
+  ['ENG200','FWS310'],
+  ['CREDITS_60','FWS310'],
+
+  ['ITE421_SWE','ITE423'],
+
+  ['ITE414','ITE415'],
+
+  ['SWE499A','SWE499B'],
+
+],
 }
 
 function isSatisfied(code, completedSet, passingSet) {
