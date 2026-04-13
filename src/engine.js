@@ -370,6 +370,17 @@ export function runAdvisoryEngine({
   const blockedSet = computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet, passingSet)
   for (const c of inProgressCodes) blockedSet.delete(c)
 
+  // ── Build availableSet (completed + passing + available this sem) ──
+  // Used so co-req children unlock when their parent is available
+  const availableSet = new Set([...completedSet, ...passingSet])
+  for (const code of majorCourseSet) {
+    if (completedSet.has(code) || inProgressCodes.has(code)) continue
+    const prereqs = prereqMap[code] || []
+    if (prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))) {
+      availableSet.add(code)
+    }
+  }
+
   // ── Recommendations ───────────────────────────────────────
   const recommendations = [...majorCourseSet]
     .map(code => {
@@ -381,7 +392,11 @@ export function runAdvisoryEngine({
       if (inProgressCodes.has(code)) return null
 
       const prereqs    = prereqMap[code] || []
-      const prereqsMet = prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))
+      // Co-req nodes: count as met if parent course is available this semester
+      const isCoReqNode = (COREQS[majorCode] || []).some(([,child]) => child === code)
+      const checkSet    = isCoReqNode ? availableSet : completedSet
+      const passSet     = isCoReqNode ? availableSet : passingSet
+      const prereqsMet  = prereqs.every(p => isPrereqSatisfied(p, checkSet, passSet))
       const isBlocked  = blockedSet.has(code)
       const downstream = countDownstream(code, unlockMap, majorCourseSet, unlockMemo)
       const sections   = sectionsMap[code] || []
@@ -418,7 +433,13 @@ export function runAdvisoryEngine({
         state = ip?.passFail ? 'in_progress' : 'in_progress_at_risk'
       } else {
         const prereqs = prereqMap[code] || []
-        if (prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))) state = 'available'
+        // For co-req nodes: satisfied if all prereqs are available (not just completed/passing)
+        const isCoReqNode = (COREQS[majorCode] || []).some(([,child]) => child === code)
+        if (isCoReqNode) {
+          if (prereqs.every(p => isPrereqSatisfied(p, availableSet, availableSet))) state = 'available'
+        } else {
+          if (prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))) state = 'available'
+        }
       }
       return { code, state }
     })
