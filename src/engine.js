@@ -564,7 +564,9 @@ export function runAdvisoryEngine({
 
     } else if (e.status === 'in_progress') {
 
-      const prediction = predictPass(e.grade, e.attendance)
+      const prediction = {
+  predicted: (e.grade ?? 0) >= 60
+}
 
       const passFail =
         manualOverrides[e.course_code] !== undefined
