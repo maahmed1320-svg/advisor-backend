@@ -332,6 +332,22 @@ export function runAdvisoryEngine({
   )
 
   const prereqMap  = buildPrereqMap(prerequisites)
+
+  // ── Major-specific prereq overrides ──────────────────────
+  // Some courses have different prereqs depending on major.
+  // CSC202: CEN uses CSC201, CSE/SWE use SWE201 — handle as OR
+  if (majorCode === 'CEN') {
+    if (prereqMap['CSC202']) {
+      // Replace SWE201 with OR condition: SWE201|CSC201
+      prereqMap['CSC202'] = prereqMap['CSC202'].map(p =>
+        p === 'SWE201' ? 'SWE201|CSC201' : p
+      )
+      // If SWE201 not in list, add CSC201 as alternative
+      if (!prereqMap['CSC202'].some(p => p.includes('SWE201'))) {
+        prereqMap['CSC202'].push('SWE201|CSC201')
+      }
+    }
+  }
   const unlockMap  = buildUnlockMap(prerequisites)
   const unlockMemo = {}
   const courseMap  = Object.fromEntries(allCourses.map(c => [c.code, c]))
