@@ -1,17 +1,38 @@
-// ============================================================
-// ADVISORY ENGINE
-// ============================================================
-
-// Placeholder codes that exist in CHAINS for display only
-// They are never real courses in the DB
 const PLACEHOLDER_PREFIXES = ['CREDITS_', 'JUNIOR_LEVEL', 'SENIOR_LEVEL']
 function isPlaceholder(code) {
   return PLACEHOLDER_PREFIXES.some(p => code.startsWith(p))
 }
 
-// Strip co-req marker (*) — used in chainDisplay only
-function cleanCode(code) { return code.replace(/\*$/, '') }
+// ============================================================
+// CO-REQUISITES — explicit pairs per major
+// These are displayed with indigo dashed arrows in the graph
+// ============================================================
+const COREQS = {
+  CEN: [
+    ['EEN210',  'EEN210L'],
+    ['PHY102',  'PHY102L'],
+    ['PHY201',  'PHY201L'],
+    ['MTT204',  'MTT205'],
+    ['CEN464',  'CEN464L'],
+    ['CEN425',  'CEN401L'],
+    ['CSC202',  'CSC202L'],
+  ],
+  CSE: [
+    ['PHY102',  'PHY102L'],
+    ['PHY201',  'PHY201L'],
+    ['CHE205',  'CHE201L'],
+    ['CSC305',  'ITE408'],
+  ],
+  SWE: [
+    ['PHY102',  'PHY102L'],
+    ['PHY201',  'PHY201L'],
+    ['CHE205',  'CHE201L'],
+  ],
+}
 
+// ============================================================
+// CHAINS — study plan paths (no * markers needed anymore)
+// ============================================================
 const CHAINS = {
 
   CEN: [
@@ -24,13 +45,15 @@ const CHAINS = {
   ['ENG200','FWS205'],
   ['STT100','COE101'],
   ['MTT102','PHY102'],
-  ['MTT102','PHY102*','PHY102L'],   // PHY102L co-req with MTT102
+  ['MTT102','PHY102L'],
+  ['PHY102','PHY102L'],
   ['MTT102','MTT200'],
   ['MTT102','CSC201'],
   ['PHY102','PHY201'],
-  ['PHY102','PHY201*','PHY201L'],   // PHY201L co-req with PHY102
+  ['PHY102','PHY201L'],
+  ['PHY201','PHY201L'],
   ['ECS100','EEN210'],
-  ['EEN210','EEN210L*'],            // EEN210L is co-req of EEN210
+  ['EEN210','EEN210L'],
   ['ENG200','COE202'],
   ['MTT102','COE202'],
   ['STT100','MTT202'],
@@ -41,7 +64,7 @@ const CHAINS = {
   ['EEN210L','CEN201'],
   ['MTT200','MTT204'],
   ['MTT200','MTT205'],
-  ['MTT204','MTT205*'],             // MTT205 co-req with MTT200
+  ['MTT204','MTT205'],
   ['CSC201','AIRE310'],
   ['COE101','AIRE310'],
   ['MTT200','AIRE310'],
@@ -60,10 +83,10 @@ const CHAINS = {
   ['CSC301','CSC308'],
   ['CEN304','CEN324'],
   ['CEN325','CEN425'],
-  ['CEN425','CEN401L*'],            // CEN401L co-req with CEN425
+  ['CEN425','CEN401L'],
   ['EEN210L','CEN401L'],
   ['CSC201','CSC202L'],
-  ['CSC202','CSC202L*'],            // CSC202L co-req with CSC201
+  ['CSC202','CSC202L'],
   ['AIRE310','AIRE410'],
   ['CREDITS_90','CEN399i'],
   ['CEN399i','CEN399ii'],
@@ -77,7 +100,7 @@ const CHAINS = {
   ['CSC305','CEN455'],
   ['CEN325','CEN455'],
   ['CEN320','CEN464'],
-  ['CEN464','CEN464L*'],            // CEN464L co-req with CEN464
+  ['CEN464','CEN464L'],
   ['SENIOR_LEVEL','CEN451'],
   ['CEN320','EEN365'],
   ['MTT204','EEN365'],
@@ -100,21 +123,23 @@ const CHAINS = {
   ['ECT200','CSE210'],
   ['ENG200','FWS205'],
   ['MTT102','PHY102'],
-  ['MTT102','PHY102*','PHY102L'],   // PHY102L co-req
+  ['MTT102','PHY102L'],
+  ['PHY102','PHY102L'],
   ['MTT102','MTT200'],
   ['STT100','COE102'],
   ['MTT102','SWE201'],
   ['STT100','MTT202'],
   ['STT100','STT201'],
   ['PHY102','PHY201'],
-  ['PHY102','PHY201*','PHY201L'],   // PHY201L co-req
+  ['PHY102','PHY201L'],
+  ['PHY201','PHY201L'],
   ['SWE201','CSC202'],
   ['MTT202','CSC302'],
   ['SWE201','CSC302'],
   ['ENG200','FWS305'],
   ['CREDITS_45','FWS305'],
   ['MTT200','MTT204'],
-  ['CHE205','CHE201L*'],            // CHE201L co-req
+  ['CHE205','CHE201L'],
   ['CREDITS_60','CSE399A'],
   ['CSC202','CSC301'],
   ['MTT202','CSC301'],
@@ -123,7 +148,7 @@ const CHAINS = {
   ['MTT202','CSE310'],
   ['CSC202','SWE401'],
   ['JUNIOR_LEVEL','CSC305'],
-  ['CSC305','ITE408*'],             // ITE408 co-req
+  ['CSC305','ITE408'],
   ['CSC301','CSC308'],
   ['SWE201','CSE300'],
   ['SWE201','CSC307'],
@@ -162,15 +187,17 @@ const CHAINS = {
   ['STT100'],
   ['ISL100'],
   ['MTT102','PHY102'],
-  ['MTT102','PHY102*','PHY102L'],   // PHY102L co-req
+  ['MTT102','PHY102L'],
+  ['PHY102','PHY102L'],
   ['ENG200','CHE205'],
-  ['CHE205','CHE201L*'],            // CHE201L co-req
+  ['CHE205','CHE201L'],
   ['MTT102','MTT200'],
   ['STT100','COE102'],
   ['MTT102','SWE201'],
   ['ENG200','FWS205'],
   ['PHY102','PHY201'],
-  ['PHY102','PHY201*','PHY201L'],   // PHY201L co-req
+  ['PHY102','PHY201L'],
+  ['PHY201','PHY201L'],
   ['STT100','MTT202'],
   ['STT100','STT201'],
   ['SWE201','CSC202'],
@@ -220,9 +247,8 @@ const CHAINS = {
 }
 
 // ============================================================
-// PREREQUISITE LOGIC
+// PREREQ LOGIC
 // ============================================================
-
 function isSatisfied(code, completedSet, passingSet) {
   return completedSet.has(code) || passingSet.has(code)
 }
@@ -269,13 +295,11 @@ function computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet, p
     for (const code of majorCourseSet) {
       if (blocked.has(code) || completedSet.has(code)) continue
       const prereqs = prereqMap[code] || []
-      const hasBrokenPrereq = prereqs.some(p => {
-        if (p.includes('|')) {
-          return !p.split('|').some(c => completedSet.has(c) || passingSet.has(c))
-        }
+      const hasBroken = prereqs.some(p => {
+        if (p.includes('|')) return !p.split('|').some(c => completedSet.has(c) || passingSet.has(c))
         return blocked.has(p)
       })
-      if (hasBrokenPrereq) { blocked.add(code); changed = true }
+      if (hasBroken) { blocked.add(code); changed = true }
     }
   }
   for (const c of completedSet) blocked.delete(c)
@@ -285,7 +309,6 @@ function computeBlocked(failingCodes, prereqMap, completedSet, majorCourseSet, p
 // ============================================================
 // MAIN ENGINE
 // ============================================================
-
 export function runAdvisoryEngine({
   student,
   enrollments,
@@ -298,11 +321,14 @@ export function runAdvisoryEngine({
   const majorCode = student.major?.code ?? 'CSE'
   const chains    = CHAINS[majorCode] || []
 
-  // Build majorCourseSet — only real courses, no placeholders
+  // Real courses only — no placeholders
   const majorCourseSet = new Set(
-    chains.flat()
-      .map(cleanCode)
-      .filter(c => !isPlaceholder(c))
+    chains.flat().filter(c => !isPlaceholder(c))
+  )
+
+  // Build co-req edge set for this major — "parent->child"
+  const coReqEdgeSet = new Set(
+    (COREQS[majorCode] || []).map(([a, b]) => `${a}->${b}`)
   )
 
   const prereqMap  = buildPrereqMap(prerequisites)
@@ -320,8 +346,9 @@ export function runAdvisoryEngine({
     if (e.status === 'completed') {
       completedSet.add(e.course_code)
     } else if (e.status === 'in_progress') {
-      const prediction = { score: Math.round((e.grade ?? 0) * 0.7 + (e.attendance ?? 0) * 0.3), predicted: ((e.grade ?? 0) * 0.7 + (e.attendance ?? 0) * 0.3) >= 60 }
-      const passFail   = manualOverrides[e.course_code] !== undefined
+      const score    = (e.grade ?? 0) * 0.7 + (e.attendance ?? 0) * 0.3
+      const prediction = { score: Math.round(score), predicted: score >= 60 }
+      const passFail = manualOverrides[e.course_code] !== undefined
         ? manualOverrides[e.course_code]
         : prediction.predicted
 
@@ -348,26 +375,25 @@ export function runAdvisoryEngine({
     .map(code => {
       const course = courseMap[code]
       if (!course) return null
-
-      const offeredThisSemester = course.semester_offered === currentSemester || course.semester_offered === 'both'
-      if (!offeredThisSemester)    return null
-      if (completedSet.has(code))  return null
+      const offered = course.semester_offered === currentSemester || course.semester_offered === 'both'
+      if (!offered) return null
+      if (completedSet.has(code)) return null
       if (inProgressCodes.has(code)) return null
 
       const prereqs    = prereqMap[code] || []
       const prereqsMet = prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))
       const isBlocked  = blockedSet.has(code)
       const downstream = countDownstream(code, unlockMap, majorCourseSet, unlockMemo)
-      const courseSections = sectionsMap[code] || []
+      const sections   = sectionsMap[code] || []
 
       return {
         code, name: course.name, credits: course.credits,
         type: course.type, semesterOffered: course.semester_offered,
-        oncePerYear: course.once_per_year, sections: courseSections,
-        instructor: courseSections[0]?.instructor ?? course.instructor ?? null,
-        days: courseSections[0]?.days ?? course.days ?? null,
-        timeSlot: courseSections[0]?.time_slot ?? course.time_slot ?? null,
-        room: courseSections[0]?.room ?? course.room ?? null,
+        oncePerYear: course.once_per_year, sections,
+        instructor: sections[0]?.instructor ?? course.instructor ?? null,
+        days: sections[0]?.days ?? course.days ?? null,
+        timeSlot: sections[0]?.time_slot ?? course.time_slot ?? null,
+        room: sections[0]?.room ?? course.room ?? null,
         prereqsMet, isBlocked, downstreamUnlocks: downstream,
         missingPrereqs: prereqs.filter(p => !isPrereqSatisfied(p, completedSet, passingSet)),
       }
@@ -379,12 +405,9 @@ export function runAdvisoryEngine({
       return b.downstreamUnlocks - a.downstreamUnlocks
     })
 
-  // ── Chain display — preserve * markers for co-req rendering ─
+  // ── Chain display ─────────────────────────────────────────
   const chainDisplay = chains.map(chain =>
-    chain.map(rawCode => {
-      const code = cleanCode(rawCode)
-      const isCoReq = rawCode.endsWith('*')
-
+    chain.map(code => {
       let state = 'locked'
       if (isPlaceholder(code)) {
         state = 'placeholder'
@@ -394,13 +417,10 @@ export function runAdvisoryEngine({
         const ip = inProgressList.find(x => x.code === code)
         state = ip?.passFail ? 'in_progress' : 'in_progress_at_risk'
       } else {
-        const prereqs   = prereqMap[code] || []
-        const available = prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))
-        if (available) state = 'available'
+        const prereqs = prereqMap[code] || []
+        if (prereqs.every(p => isPrereqSatisfied(p, completedSet, passingSet))) state = 'available'
       }
-
-      // Pass co-req marker back via code so Chains.jsx can read it
-      return { code: isCoReq ? rawCode : code, state }
+      return { code, state }
     })
   )
 
@@ -420,6 +440,7 @@ export function runAdvisoryEngine({
     },
     inProgress: inProgressList, completed, recommendations,
     chains: chainDisplay,
+    coReqEdges: [...coReqEdgeSet],  // pass to frontend
     blockedCodes: [...blockedSet],
   }
 }
