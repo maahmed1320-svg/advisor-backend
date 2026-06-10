@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001
 // Define allowed origins
 const allowedOrigins = [
   'http://localhost:5173', // Your local development frontend
-  'https://your-actual-frontend-domain.up.railway.app' // ADD YOUR RAILWAY FRONTEND URL HERE
+  'advisor-frontend-production.up.railway.app' // ADD YOUR RAILWAY FRONTEND URL HERE
 ];
 
 app.use(cors({
