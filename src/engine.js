@@ -110,139 +110,48 @@ const chains = {
   ],
 
   ME_Electives: [
-    // CME 460
     ['CME301', 'CME460'],
-
-    // CME 461
     ['CHE305', 'CME461'],
     ['CME341', 'CME461'],
     ['CME331', 'CME461'],
-
-    // CME 462
     ['CHE305', 'CME462'],
     ['CME331', 'CME462'],
-
-    // CME 463
     ['CHE330', 'CME463'],
-
-    // CME 464
     ['CME301', 'CME464'],
-
-    // CME 465
     ['CME341', 'CME465'],
     ['MEC300', 'CME465'],
-
-    // CME 470
     ['CHE305', 'CME470'],
     ['CHE330', 'CME470'],
-
-    // CME 471
     ['CHE305', 'CME471'],
     ['CHE330', 'CME471'],
-
-    // CME 472
     ['CME470', 'CME472'],
-
-    // CME 473
     ['CME471', 'CME473'],
-
-    // CME 480
     ['CME301', 'CME480'],
     ['CHE330', 'CME480'],
-
-    // CME 481
     ['CME341', 'CME481'],
     ['CME300', 'CME481'],
-
-    // CME 482
     ['CME480', 'CME482'],
-
-    // CME 483
     ['CME301', 'CME483'],
-
-
     ['CME301', 'CME484'],
-
-
-    // CME 490
     ['CHE330', 'CME490'],
-
-    // CME 491
     ['CME490', 'CME491'],
-
-    // CME 492
     ['CME490', 'CME492'],
-
-    // CME 493
     ['CME490', 'CME493'],
     ['CME331', 'CME493'],
   ],
 }
 
 const Course_Year_Map = {
-  FWS100:11,
-  ARL101: 11,
-  ENG200: 11,
-  CME200: 11,
-  STT100: 11,
-  MTT102: 11,
-
-  COE102: 12,
-  FWS211:12,
-  PHY102: 12,
-  PHY102L: 12,
-  MTT200: 12,
-  CHE205: 12,
-  CHE201L: 12,
-  CME210: 12,
-
-  MTT201: 21,
-  CSC201: 21,
-  PHY201: 21,
-  ISL100: 21,
-  PHY201L: 21,
-  COE101: 21,
-  CME212: 21,
-  
-
-  MTT204: 22,
-  MTT205: 22,
-  MEC300: 22,
-  CHE206: 22,
-  CHE206L: 22,
-  CME220: 22,
-
+  FWS100:11, ARL101: 11, ENG200: 11, CME200: 11, STT100: 11, MTT102: 11,
+  COE102: 12, FWS211:12, PHY102: 12, PHY102L: 12, MTT200: 12, CHE205: 12, CHE201L: 12, CME210: 12,
+  MTT201: 21, CSC201: 21, PHY201: 21, ISL100: 21, PHY201L: 21, COE101: 21, CME212: 21,
+  MTT204: 22, MTT205: 22, MEC300: 22, CHE206: 22, CHE206L: 22, CME220: 22,
   CME398: 222,
-
-  CHE305: 31,
-  CME300: 31,
-  CHE330: 31,
-  CME341: 31,
-  FWS305: 31,
-  COE202: 31,
-
-  CME301: 32,
-  CME331: 32,
-  CME305: 32,
-  CME320: 32,
-  CME321: 32,
-  FWS310: 32,
-
+  CHE305: 31, CME300: 31, CHE330: 31, CME341: 31, FWS305: 31, COE202: 31,
+  CME301: 32, CME331: 32, CME305: 32, CME320: 32, CME321: 32, FWS310: 32,
   CME399: 322,
-
-  CME400: 41,
-  CME430: 41,
-  CME450: 41,
-  CME455: 41,
-  MEI: 41,
-  CME498: 41,
-  FWS205: 41,
-
-  CME499: 42,
-  MEII: 42,
-  MEIII: 42,
-  OEI: 42,
-  OEII: 42,
+  CME400: 41, CME430: 41, CME450: 41, CME455: 41, MEI: 41, CME498: 41, FWS205: 41,
+  CME499: 42, MEII: 42, MEIII: 42, OEI: 42, OEII: 42,
 }
 
 // ── Placeholder guard ─────────────────────────────────────────
@@ -252,6 +161,22 @@ function isPlaceholder(code) {
     code.endsWith('_LEVEL')     ||
     /^(ME|OE)[IVX\d]*$/.test(code)
   )
+}
+
+// ── Extract structural credit hour constraints ────────────────
+function buildCreditRequirementsMap(chainKey) {
+  const map = {}
+  for (const entry of chains[chainKey] || []) {
+    if (entry.length < 2) continue
+    const [prereq, course] = entry
+    if (prereq.startsWith('CREDITS_')) {
+      const parsedCredits = parseInt(prereq.replace('CREDITS_', ''), 10)
+      if (!isNaN(parsedCredits)) {
+        map[course] = parsedCredits
+      }
+    }
+  }
+  return map
 }
 
 // ── Build prereq map: code → [required codes] ─────────────────
@@ -293,7 +218,6 @@ function countDownstream(code, unlockMap, courseSet, memo = {}) {
 }
 
 // ── Prereq satisfaction check ─────────────────────────────────
-// Supports pipe-separated OR alternatives: "CME300|CME301"
 function isPrereqSatisfied(prereq, completedSet, passingSet) {
   if (prereq.includes('|')) {
     return prereq.split('|').some(c => completedSet.has(c) || passingSet.has(c))
@@ -302,15 +226,12 @@ function isPrereqSatisfied(prereq, completedSet, passingSet) {
 }
 
 // ── Reachability check ────────────────────────────────────────
-// A course is reachable if it's completed, in-progress, or not blocked.
 function isReachable(code, completedSet, inProgressSet, blockedSet) {
   return completedSet.has(code) || inProgressSet.has(code) || !blockedSet.has(code)
 }
 
-// ── Compute blocked set ───────────────────────────────────────
-// A course is blocked if any of its prereqs are failing or blocked.
-// ── Compute blocked set ───────────────────────────────────────
-function computeBlocked(failingCodes, prereqMap, prereqMapMajor, completedSet, combinedSet, passingSet) { // 💡 Changed parameter name to passingSet
+// ── Compute blocked set incorporating Credit Threshold Rules ──
+function computeBlocked(failingCodes, prereqMap, prereqMapMajor, completedSet, combinedSet, passingSet, creditRequirementsMap, totalEarnedCredits) { 
   const mergedPrereqMap = { ...prereqMap }
   for (const [course, prereqs] of Object.entries(prereqMapMajor)) {
     if (!mergedPrereqMap[course]) mergedPrereqMap[course] = []
@@ -319,7 +240,19 @@ function computeBlocked(failingCodes, prereqMap, prereqMapMajor, completedSet, c
     }
   }
 
+  // Set initial blocks for failing courses
   const blocked = new Set(failingCodes)
+  
+  // Apply initial blocks if student credit hours fall below structural rules
+  for (const code of combinedSet) {
+    if (creditRequirementsMap[code] !== undefined) {
+      if (totalEarnedCredits < creditRequirementsMap[code]) {
+        blocked.add(code)
+      }
+    }
+  }
+
+  // Cascade iterative blocking downstream
   let changed = true
   while (changed) {
     changed = false
@@ -327,19 +260,21 @@ function computeBlocked(failingCodes, prereqMap, prereqMapMajor, completedSet, c
       if (blocked.has(code) || completedSet.has(code)) continue
       const prereqs = mergedPrereqMap[code] || []
       const hasBroken = prereqs.some(p =>
-        // 💡 FIXED: Now checking passingSet, so explicit failures will trigger a cascade block!
         !isPrereqSatisfied(p, completedSet, passingSet) ||
         blocked.has(p)
       )
       if (hasBroken) { blocked.add(code); changed = true }
     }
   }
-  for (const c of completedSet) blocked.delete(c)
+
+  // 💡 FIXED: Safely loop using .keys() because completedSet is a Map object instance
+  for (const c of completedSet.keys()) {
+    blocked.delete(c)
+  }
   return blocked
 }
 
 // ── Apply co-requisite rules ──────────────────────────────────
-// If A is reachable, B is unblocked (they can be taken together).
 function applyCoreqs(blockedSet, completedSet, inProgressSet) {
   let changed = true
   while (changed) {
@@ -375,11 +310,10 @@ function mergePrereqMaps(mapA, mapB) {
 export function runAdvisoryEngine({
   student,
   enrollments,
-  manualOverrides = {},   // { "CME300": true (pass) | false (fail) }
+  manualOverrides = {},   // { "CME300": true | false }
   currentSemester = 'fall',
-  sectionsMap = {},       // { "CME300": [ ...rows from courses table ] }
+  sectionsMap = {},       // { "CME300": [ ...rows ] }
 }) {
-
 
   const chainKey = student.major?.code ?? 'CME2022'
 
@@ -396,7 +330,8 @@ export function runAdvisoryEngine({
 
   const combinedSet = new Set([...Course_Set, ...Major_course_Set])
 
-  // ── Prereq & unlock maps ──────────────────────────────────
+  // ── Prereq, Credit & unlock maps ──────────────────────────
+  const creditRequirementsMap   = buildCreditRequirementsMap(chainKey)
   const prereqMap               = buildPrereqMap(chainKey)
   const prereqMapForMajorCourse = buildPrereqMap("ME_Electives")
   const mergedPrereqMap         = mergePrereqMaps(prereqMap, prereqMapForMajorCourse)
@@ -406,9 +341,11 @@ export function runAdvisoryEngine({
 
   // ── Classify enrollments ──────────────────────────────────
   const completedMAP   = new Map()
-  const passingSet     = new Set()   // in_progress predicted/overridden pass
-  const failingCodes   = new Set()   // in_progress predicted/overridden fail
+  const passingSet     = new Set()   
+  const failingCodes   = new Set()   
   const inProgressList = []
+
+  let enrollmentCreditsEarned = 0
 
   for (const e of enrollments) {
     if (e.type === 'completed') {
@@ -420,7 +357,7 @@ export function runAdvisoryEngine({
         enrollmentDate: e.enrollment_date,
         semester:       e.semseter,
       })
-
+      enrollmentCreditsEarned += Number(e.credits || 0)
       continue
     }
 
@@ -438,7 +375,7 @@ export function runAdvisoryEngine({
         code:          e.course_id,
         name:          e.course_title    ?? e.course_id,
         credits:       e.credits         ?? 3,
-        term:          e.semseter        ?? null,   // matches DB typo
+        term:          e.semseter        ?? null,   
         date:          e.enrollment_date ?? null,
         passFail:      willPass,
         manualOverride: hasOverride,
@@ -449,17 +386,27 @@ export function runAdvisoryEngine({
 
   const inProgressSet = new Set(inProgressList.map(c => c.code))
 
+  // Determine current baseline earned credits safely
+  const totalEarnedCredits = Math.max(
+    Number(student['Total Credit Pass'] || 0),
+    enrollmentCreditsEarned
+  )
+
+  // Compute block state tracking both core requirements and credit limits
   const blockedSet = computeBlocked(
-      failingCodes, 
-      prereqMap, 
-      prereqMapForMajorCourse,
-      completedMAP, 
-      combinedSet, 
-      passingSet // 💡 FIXED: Changed from inProgressSet to passingSet
-    )
+    failingCodes, 
+    prereqMap, 
+    prereqMapForMajorCourse,
+    completedMAP, 
+    combinedSet, 
+    passingSet,
+    creditRequirementsMap,
+    totalEarnedCredits
+  )
+
   applyCoreqs(blockedSet, completedMAP, inProgressSet)
+
   // ── Recommendations ───────────────────────────────────────
-  // Only iterates courses offered this semester (keys of sectionsMap)
   const recommendations = []
   const All_courses = []
 
@@ -474,24 +421,28 @@ export function runAdvisoryEngine({
       sections:   sections
     })
 
-    if (!combinedSet.has(code)) continue                          // not in student's plan
+    if (!combinedSet.has(code)) continue                          
     if (completedMAP.has(code) || inProgressSet.has(code)) continue
-         //Message me on whatsup                 
-
+                         
     const prereqs    = mergedPrereqMap[code] || []
     const isBlocked  = blockedSet.has(code)
     const prereqsMet = prereqs.every(p =>
       isPrereqSatisfied(p, completedMAP, passingSet)
-    )
+    ) && (creditRequirementsMap[code] === undefined || totalEarnedCredits >= creditRequirementsMap[code])
 
     const downstream = countDownstream(code, unlockMap, combinedSet, unlockMemo)
+
+    const missingPrereqs = prereqs.filter(p => !isPrereqSatisfied(p, completedMAP, passingSet))
+    if (creditRequirementsMap[code] !== undefined && totalEarnedCredits < creditRequirementsMap[code]) {
+      missingPrereqs.push(`Required: ${creditRequirementsMap[code]} Credit Hours (Current: ${totalEarnedCredits})`)
+    }
 
     recommendations.push({
       code,
       name:      firstSection.long_title,
       credits:   firstSection.max_units,
       career:    firstSection.career,
-      sections,                                                   // all sections for frontend
+      sections,                                                                   
       instructor: `${firstSection.first_name ?? ''} ${firstSection.last_name ?? ''}`.trim(),
       days: {
         Mon:   firstSection.Mon,
@@ -500,7 +451,6 @@ export function runAdvisoryEngine({
         Thurs: firstSection.Thurs,
         Fri:   firstSection.Fri,
       },
-      
       timeSlot:  `${firstSection.mtg_start} - ${firstSection.mtg_end}`,
       startDate: firstSection.start_date,
       endDate:   firstSection.end_date,
@@ -509,13 +459,10 @@ export function runAdvisoryEngine({
       prereqsMet,
       isBlocked,
       downstreamUnlocks: downstream,
-      missingPrereqs: prereqs.filter(p =>
-        !isPrereqSatisfied(p, completedMAP, passingSet)
-      ),
+      missingPrereqs,
     })
   }
 
-  // Sort: unblocked + prereqs met first, then by downstream value
   recommendations.sort((a, b) => {
     if (a.isBlocked  !== b.isBlocked)  return a.isBlocked  ? 1 : -1
     if (a.prereqsMet !== b.prereqsMet) return a.prereqsMet ? -1 : 1
@@ -541,24 +488,23 @@ export function runAdvisoryEngine({
       } else if (inProgressSet.has(code)) {
         const ip = inProgressList.find(x => x.code === code)
         state = ip?.passFail ? 'in_progress' : 'in_progress_at_risk'
-        meta = { title: ip?.name }   // ← add name for in_progress
+        meta = { title: ip?.name }   
       } else if (!blockedSet.has(code)) {
         state = 'available'
       }
 
-      // for locked/available — get name from sectionsMap
       const sectionName = sectionsMap[code]?.[0]?.long_title ?? null
 
       return { 
         code, 
         state, 
         year: Course_Year_Map[code] ?? null, 
-        title: meta.title ?? sectionName ?? null,  // ← title for all states
+        title: meta.title ?? sectionName ?? null,  
         ...meta 
       }
     })
 
-  // ── Completed list (most recent first) ───────────────────
+  // ── Completed list ────────────────────────────────────────
   const completed = enrollments
     .filter(e => e.type === 'completed')
     .map(e => ({
@@ -568,7 +514,7 @@ export function runAdvisoryEngine({
       term:         e.semseter        ?? null,   
       grade:        e.grade           ?? null,
       enrolledDate: e.enrollment_date ?? null,
-      type2 : e.type2 ?? null,
+      type2 :       e.type2           ?? null,
     }))
     .reverse()
 
@@ -576,8 +522,9 @@ export function runAdvisoryEngine({
     student: {
       id:                 student.ID,
       name:               student['Student Name'],
+      titleName:          student['Student Name'],
       cgpa:               student.CGPA,
-      totalCreditsPassed: student['Total Credit Pass'],
+      totalCreditsPassed: totalEarnedCredits,
       requiredCredits:    student.major?.required_credits ?? 136,
       major:              student.major?.name  ?? '',
       majorCode:          chainKey,
@@ -589,7 +536,7 @@ export function runAdvisoryEngine({
     recommendations,
     chainDisplay,
     prereqMap: mergedPrereqMap, 
-    coReqEdges:   [...coReqEdgeSet],
+    coReqEdges:    [...coReqEdgeSet],
     All_courses,
   }
 }
