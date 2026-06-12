@@ -89,6 +89,7 @@ router.post('/student/:id/compute', async (req, res) => {
 
 router.get('/health', (_, res) => res.json({ ok: true }))
 
+
 // ============================================================
 // 3. POST /student/:id/enroll (Submit Cart to Database)
 // ============================================================
@@ -109,13 +110,15 @@ router.post('/student/:id/enroll', async (req, res) => {
       .select('course_code')
       .eq('student_id', studentIntId);
 
-    const existingCodes = new Set((existingRows || []).map(r => r.course_code));
+    const existingCodes = new Set((existingRows || []).map(r => r.course_code?.trim().toUpperCase()));
     
     // Filter out rows that are already present in the table
-    const targetPayloadCourses = courses.filter(c => !existingCodes.has(c.code));
+    const targetPayloadCourses = courses.filter(c => !existingCodes.has(c.code?.trim().toUpperCase()));
 
+    // 💡 FIXED: Instead of throwing a 400 error block, return success if they are already in the DB.
+    // This allows the frontend to clear out loading states and toggle buttons smoothly.
     if (targetPayloadCourses.length === 0) {
-      return res.status(400).json({ error: 'All selected courses are already submitted.' });
+      return res.json({ success: true, message: 'Schedule cart is already up to date.' });
     }
 
     const rowsToInsert = targetPayloadCourses.map(item => {
